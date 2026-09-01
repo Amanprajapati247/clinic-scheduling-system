@@ -1,0 +1,144 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                 String                @id @default(uuid())
+  email              String                @unique
+  passwordHash       String
+  name               String
+  role               String                @default("FRONT_DESK") // "FRONT_DESK" | "PROVIDER"
+  provider           Provider?
+  timelineLogs       AppointmentTimeline[]
+  alertDismissals    AlertDismissal[]
+  assignedSupporting SupportingProvider[]
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  @@index([email])
+  @@index([role])
+}
+
+model Provider {
+  id                     String               @id @default(uuid())
+  userId                 String               @unique
+  user                   User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  specialty              String
+  department             String
+  phone                  String?
+  slots                  AppointmentSlot[]
+  scheduledAppointments  Appointment[]        @relation("SchedulingProvider")
+  supportingAppointments SupportingProvider[]
+  visitNotes             VisitNote[]
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+
+  @@index([specialty])
+  @@index([department])
+}
+
+model AppointmentSlot {
+  id          String       @id @default(uuid())
+  providerId  String
+  provider    Provider     @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  date        String // Format: YYYY-MM-DD
+  startTime   String // Format: HH:mm (24h)
+  endTime     String // Format: HH:mm (24h)
+  duration    Int // Duration in minutes
+  isBooked    Boolean      @default(false)
+  isArchived  Boolean      @default(false)
+  appointment Appointment?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([providerId, date])
+  @@index([isBooked, isArchived])
+}
+
+model Appointment {
+  id                   String                @id @default(uuid())
+  slotId               String                @unique
+  slot                 AppointmentSlot       @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  schedulingProviderId String
+  schedulingProvider   Provider              @relation("SchedulingProvider", fields: [schedulingProviderId], references: [id])
+  patientName          String
+  patientEmail         String
+  patientPhone         String
+  reasonForVisit       String
+  status               String                @default("Requested") // Requested | Confirmed | CheckedIn | Completed | NoShow | Cancelled
+  cancellationReason   String?
+  cancelledAt          DateTime?
+  cancelledById        String?
+  checkedInAt          DateTime?
+  completedAt          DateTime?
+  supportingProviders  SupportingProvider[]
+  visitNotes           VisitNote[]
+  timeline             AppointmentTimeline[]
+  alertDismissals      AlertDismissal[]
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+
+  @@index([schedulingProviderId, status])
+  @@index([patientName])
+  @@index([status])
+}
+
+model SupportingProvider {
+  id            String      @id @default(uuid())
+  appointmentId String
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  providerId    String
+  provider      Provider    @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  assignedAt    DateTime    @default(now())
+  assignedById  String?
+  assignedBy    User?       @relation(fields: [assignedById], references: [id])
+
+  @@unique([appointmentId, providerId])
+  @@index([providerId])
+  @@index([appointmentId])
+}
+
+model VisitNote {
+  id            String      @id @default(uuid())
+  appointmentId String
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  providerId    String
+  provider      Provider    @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  content       String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([appointmentId])
+  @@index([providerId])
+}
+
+model AppointmentTimeline {
+  id            String      @id @default(uuid())
+  appointmentId String
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  actionType    String // STATUS_CHANGE | SUPPORTING_PROVIDER_ADDED | SUPPORTING_PROVIDER_REMOVED | CANCELLATION | VISIT_NOTE_CREATED | APPOINTMENT_REASSIGNED | APPOINTMENT_CREATED
+  oldValue      String?
+  newValue      String?
+  timestamp     DateTime    @default(now())
+
+  @@index([appointmentId, timestamp])
+}
+
+model AlertDismissal {
+  id            String      @id @default(uuid())
+  appointmentId String
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  alertType     String // UNCONFIRMED_24H | UNCONFIRMED_1H
+  dismissedAt   DateTime    @default(now())
+
+  @@index([appointmentId, alertType])
+}
