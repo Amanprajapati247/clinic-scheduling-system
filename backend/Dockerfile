@@ -1,5 +1,5 @@
 # Production Multi-Stage Dockerfile for Backend
-FROM node:20-alpine AS builder
+FROM node:20 AS builder
 
 WORKDIR /app
 
@@ -18,7 +18,7 @@ RUN npx prisma generate
 RUN npm run build
 
 # Production Runner
-FROM node:20-alpine AS runner
+FROM node:20 AS runner
 
 WORKDIR /app
 
