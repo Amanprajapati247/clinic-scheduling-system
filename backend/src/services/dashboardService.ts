@@ -39,7 +39,7 @@ export class DashboardService {
     const checkedInToday = await prisma.appointment.count({
       where: {
         ...providerScope,
-        status: AppointmentStatus.CheckedIn,
+        status: AppointmentStatus.CheckedIn as any,
         slot: { date: todayStr },
       },
     });
@@ -48,7 +48,7 @@ export class DashboardService {
     const noShowsThisWeek = await prisma.appointment.count({
       where: {
         ...providerScope,
-        status: AppointmentStatus.NoShow,
+        status: AppointmentStatus.NoShow as any,
         slot: {
           date: {
             gte: weekStartStr,
@@ -62,7 +62,7 @@ export class DashboardService {
     const upcomingConfirmed = await prisma.appointment.count({
       where: {
         ...providerScope,
-        status: AppointmentStatus.Confirmed,
+        status: AppointmentStatus.Confirmed as any,
         slot: {
           date: { gte: todayStr },
         },

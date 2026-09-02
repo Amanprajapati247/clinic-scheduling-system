@@ -19,7 +19,7 @@ export class TimelineService {
       data: {
         appointmentId: params.appointmentId,
         userId: params.userId,
-        actionType: params.actionType,
+        actionType: params.actionType as any,
         oldValue: params.oldValue,
         newValue: params.newValue,
       },

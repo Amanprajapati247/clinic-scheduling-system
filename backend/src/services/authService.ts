@@ -37,7 +37,7 @@ export class AuthService {
         email: dto.email.toLowerCase().trim(),
         passwordHash,
         name: dto.name,
-        role: dto.role,
+        role: dto.role as any,
         ...(dto.role === Role.PROVIDER
           ? {
               provider: {
@@ -59,7 +59,7 @@ export class AuthService {
       userId: user.id,
       email: user.email,
       role: user.role,
-      providerId: user.provider?.id,
+      providerId: (user as any).provider?.id,
     });
 
     return {
@@ -68,7 +68,7 @@ export class AuthService {
         email: user.email,
         name: user.name,
         role: user.role,
-        provider: user.provider,
+        provider: (user as any).provider,
       },
       token,
     };

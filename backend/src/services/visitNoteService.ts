@@ -56,7 +56,7 @@ export class VisitNoteService {
     await TimelineService.logEvent({
       appointmentId,
       userId: author.userId,
-      actionType: TimelineActionType.VISIT_NOTE_CREATED,
+      actionType: TimelineActionType.VISIT_NOTE_CREATED as any,
       newValue: `Visit note added: "${content.substring(0, 40)}${content.length > 40 ? '...' : ''}"`,
     });
 

@@ -30,7 +30,7 @@ export class AlertService {
     // 1. Fetch all Requested appointments with their slots, providers, and dismissal records
     const requestedAppointments = await prisma.appointment.findMany({
       where: {
-        status: AppointmentStatus.Requested,
+        status: AppointmentStatus.Requested as any,
       },
       include: {
         slot: true,
@@ -64,7 +64,7 @@ export class AlertService {
           // Checked against 'UNCONFIRMED_1H' dismissal.
           // Note: Even if 'UNCONFIRMED_24H' was dismissed, this 1h alert must reappear!
           const dismissed1H = apt.alertDismissals.some(
-            (d) => d.alertType === AlertType.UNCONFIRMED_1H
+            (d) => d.alertType === (AlertType.UNCONFIRMED_1H as any)
           );
 
           if (!dismissed1H) {
@@ -92,7 +92,7 @@ export class AlertService {
         } else {
           // 24-Hour Warning Alert
           const dismissed24H = apt.alertDismissals.some(
-            (d) => d.alertType === AlertType.UNCONFIRMED_24H
+            (d) => d.alertType === (AlertType.UNCONFIRMED_24H as any)
           );
 
           if (!dismissed24H) {
@@ -147,7 +147,7 @@ export class AlertService {
       data: {
         appointmentId,
         userId: actor.userId,
-        alertType: alertType as string,
+        alertType: alertType as any,
       },
     });
   }

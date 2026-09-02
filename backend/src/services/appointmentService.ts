@@ -66,7 +66,7 @@ export class AppointmentService {
           patientEmail: dto.patientEmail.toLowerCase().trim(),
           patientPhone: dto.patientPhone.trim(),
           reasonForVisit: dto.reasonForVisit.trim(),
-          status: AppointmentStatus.Requested,
+          status: AppointmentStatus.Requested as any,
         },
         include: {
           slot: true,
@@ -83,7 +83,7 @@ export class AppointmentService {
         data: {
           appointmentId: newApt.id,
           userId: actor.userId,
-          actionType: TimelineActionType.APPOINTMENT_CREATED,
+          actionType: TimelineActionType.APPOINTMENT_CREATED as any,
           newValue: `Appointment requested for ${newApt.patientName} with Dr. ${slot.provider.id} on ${slot.date} at ${slot.startTime}`,
         },
       });
@@ -315,7 +315,7 @@ export class AppointmentService {
 
     const now = new Date();
     const updateData: any = {
-      status: targetStatus,
+      status: targetStatus as any,
     };
 
     if (targetStatus === AppointmentStatus.CheckedIn) {
@@ -345,8 +345,8 @@ export class AppointmentService {
       userId: actor.userId,
       actionType:
         targetStatus === AppointmentStatus.Cancelled
-          ? TimelineActionType.CANCELLATION
-          : TimelineActionType.STATUS_CHANGE,
+          ? (TimelineActionType.CANCELLATION as any)
+          : (TimelineActionType.STATUS_CHANGE as any),
       oldValue: appointment.status,
       newValue: targetStatus === AppointmentStatus.Cancelled
         ? `Cancelled (Reason: ${cancellationReason?.trim()})`
@@ -467,7 +467,7 @@ export class AppointmentService {
         data: {
           appointmentId,
           userId: actor.userId,
-          actionType: TimelineActionType.APPOINTMENT_REASSIGNED,
+          actionType: TimelineActionType.APPOINTMENT_REASSIGNED as any,
           oldValue: `Dr. ${appointment.schedulingProvider.user.name}`,
           newValue: `Dr. ${targetProvider.user.name}`,
         },
@@ -537,7 +537,7 @@ export class AppointmentService {
     await TimelineService.logEvent({
       appointmentId,
       userId: actor.userId,
-      actionType: TimelineActionType.SUPPORTING_PROVIDER_ADDED,
+      actionType: TimelineActionType.SUPPORTING_PROVIDER_ADDED as any,
       newValue: `Dr. ${supportingProvider.user.name} (${supportingProvider.specialty})`,
     });
 
@@ -583,7 +583,7 @@ export class AppointmentService {
     await TimelineService.logEvent({
       appointmentId,
       userId: actor.userId,
-      actionType: TimelineActionType.SUPPORTING_PROVIDER_REMOVED,
+      actionType: TimelineActionType.SUPPORTING_PROVIDER_REMOVED as any,
       oldValue: `Dr. ${existing.provider.user.name}`,
     });
 
