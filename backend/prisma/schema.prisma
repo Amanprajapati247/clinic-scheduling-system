@@ -1,5 +1,5 @@
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -7,12 +7,41 @@ generator client {
   provider = "prisma-client-js"
 }
 
+enum Role {
+  FRONT_DESK
+  PROVIDER
+}
+
+enum AppointmentStatus {
+  Requested
+  Confirmed
+  CheckedIn
+  Completed
+  NoShow
+  Cancelled
+}
+
+enum TimelineActionType {
+  APPOINTMENT_CREATED
+  STATUS_CHANGE
+  SUPPORTING_PROVIDER_ADDED
+  SUPPORTING_PROVIDER_REMOVED
+  CANCELLATION
+  VISIT_NOTE_CREATED
+  APPOINTMENT_REASSIGNED
+}
+
+enum AlertType {
+  UNCONFIRMED_24H
+  UNCONFIRMED_1H
+}
+
 model User {
   id                 String                @id @default(uuid())
   email              String                @unique
   passwordHash       String
   name               String
-  role               String                @default("FRONT_DESK") // "FRONT_DESK" | "PROVIDER"
+  role               Role                  @default(FRONT_DESK)
   provider           Provider?
   timelineLogs       AppointmentTimeline[]
   alertDismissals    AlertDismissal[]
@@ -70,7 +99,7 @@ model Appointment {
   patientEmail         String
   patientPhone         String
   reasonForVisit       String
-  status               String                @default("Requested") // Requested | Confirmed | CheckedIn | Completed | NoShow | Cancelled
+  status               AppointmentStatus     @default(Requested)
   cancellationReason   String?
   cancelledAt          DateTime?
   cancelledById        String?
@@ -109,7 +138,7 @@ model VisitNote {
   appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
   providerId    String
   provider      Provider    @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  content       String
+  content       String      @db.Text
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
@@ -118,15 +147,15 @@ model VisitNote {
 }
 
 model AppointmentTimeline {
-  id            String      @id @default(uuid())
+  id            String             @id @default(uuid())
   appointmentId String
-  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  appointment   Appointment        @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
   userId        String
-  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  actionType    String // STATUS_CHANGE | SUPPORTING_PROVIDER_ADDED | SUPPORTING_PROVIDER_REMOVED | CANCELLATION | VISIT_NOTE_CREATED | APPOINTMENT_REASSIGNED | APPOINTMENT_CREATED
-  oldValue      String?
-  newValue      String?
-  timestamp     DateTime    @default(now())
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  actionType    TimelineActionType
+  oldValue      String?            @db.Text
+  newValue      String?            @db.Text
+  timestamp     DateTime           @default(now())
 
   @@index([appointmentId, timestamp])
 }
@@ -137,7 +166,7 @@ model AlertDismissal {
   appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
   userId        String
   user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  alertType     String // UNCONFIRMED_24H | UNCONFIRMED_1H
+  alertType     AlertType
   dismissedAt   DateTime    @default(now())
 
   @@index([appointmentId, alertType])
