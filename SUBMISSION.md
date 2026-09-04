@@ -1,129 +1,70 @@
-# Complete Clinic Appointment Scheduling System — Submission Overview
+# Submission
 
-## 🌟 Executive Summary
-CareSync is a production-grade, enterprise-ready full-stack Clinic Appointment Scheduling System designed to streamline clinical workflows, enforce medical data integrity, facilitate multi-provider care teams, and provide executive analytics.
+Fill this in and commit it. This is the first file we open.
 
----
+## Links
 
-## 🔑 Demo Personas & Credentials
+- **GitHub repository:** https://github.com/Amanprajapati247/clinic-scheduling-system
+- **Live application:** https://clinic-scheduling-frontend.vercel.app
 
-| Role | Email | Password | Access Capabilities |
-| :--- | :--- | :--- | :--- |
-| **Front Desk Lead** | `frontdesk@example.com` | `Password123` | Full slot creation, provider reassignments, alert management, confirming/cancelling bookings. |
-| **Front Desk Coordinator** | `frontdesk2@example.com` | `Password123` | Reception coordination, appointment check-ins, alert review. |
-| **Dr. Gregory House** | `provider@example.com` | `Password123` | Primary Provider (Diagnostic Medicine), author-locked notes, personal schedule & CSV export. |
-| **Dr. James Wilson** | `provider2@example.com` | `Password123` | Oncology Provider & Care Team Consultant. |
-| **Dr. Lisa Cuddy** | `provider3@example.com` | `Password123` | Endocrinology & Outpatient Care. |
-| **Dr. Robert Chase** | `provider4@example.com` | `Password123` | Critical Care Services & Surgery. |
-| **Dr. Allison Cameron** | `provider5@example.com` | `Password123` | Immunology & Infectious Disease. |
+## Notes for the reviewer
 
-> [!TIP]
-> The login screen features **1-Click Demo Buttons** to instantly log into either the Front Desk or Provider portals without manual typing.
+- **Render Backend Cold Start**: The backend is hosted on Render's free tier. If the service has been idle, the very first API request may take approximately 30–50 seconds to spin up from sleep mode. Subsequent requests will be fast and responsive.
+- **1-Click Demo Personas**: The login page includes quick 1-click persona buttons for **Front Desk Lead** and **Clinical Provider (Dr. Gregory House)** for instant access.
+- **Pre-Seeded Database**: The live Supabase PostgreSQL database is pre-populated with 50 appointments across past, present, and future dates with active care teams, clinical visit notes, and audit timelines.
+- **Automated Domain Test Suite**: You can run the comprehensive 28-assertion domain test suite locally anytime with `cd backend && npx tsx test-suite.ts`.
 
----
+## Demo credentials
 
-## 🚀 Quick Start Guide (Local Execution)
+| Role | Email | Password |
+|------|-------|----------|
+| Front Desk Lead | `frontdesk@example.com` | `Password123` |
+| Clinical Provider (Dr. Gregory House) | `provider@example.com` | `Password123` |
+| Clinical Provider (Dr. James Wilson) | `provider2@example.com` | `Password123` |
 
-### Prerequisites
-- Node.js (v18+)
-- npm
+## Stack
 
-### 1. Backend Setup
-```bash
-cd backend
-npm install
-npm run prisma:generate
-npm run db:setup     # Applies database schema and seeds 50 appointments with care teams, visit notes, and audit timelines
-npm run dev          # Starts Express backend on http://localhost:5000
-```
+| Layer | What you used | Why |
+|-------|---------------|-----|
+| Frontend | React 18, Vite, React Router v6, Tailwind CSS, Lucide Icons, Recharts | Fast SPA performance, component-driven UI, responsive medical dashboard styling, and rich charting for weekly analytics. |
+| Backend | Node.js, Express.js, TypeScript, Zod | Type safety across domain layers, scalable REST architecture, schema-level request validation, and strict state machine guarantees. |
+| Database | PostgreSQL (Supabase), Prisma ORM | Relational integrity with foreign key cascades, composite indexes for search performance, native Enums, and dual compatibility with local SQLite. |
+| Hosting | Vercel (Frontend), Render (Backend), Supabase (Database) | High availability global edge CDN for React SPA, containerized backend runtime, and scalable PostgreSQL database. |
 
-### 2. Frontend Setup
-```bash
-cd frontend
-npm install
-npm run dev          # Starts Vite React dev server on http://localhost:5173
-```
+## Goal checklist
 
-### 3. Run Automated Domain Test Suite
-```bash
-cd backend
-npx tsx test-suite.ts
-```
+Mark each honestly. Partial is fine — say what is partial.
 
----
+| # | Goal | Status | Notes |
+|---|------|--------|-------|
+| 1 | **Accounts & Roles (RBAC)** | Done | Strict backend middleware and frontend route guards for `FRONT_DESK` and `PROVIDER`. |
+| 2 | **Appointment Slots** | Done | Provider slots with date, start/end time, duration; editable only when unbooked; locked on booking; soft archive & restore supported. |
+| 3 | **Visit Notes** | Done | Belongs to appointment; free text; author-provider editable only; displayed chronologically with author badges. |
+| 4 | **Finite State Machine Workflow** | Done | Strict state machine (`Requested` → `Confirmed` → `CheckedIn` → `Completed`; `NoShow` strictly after start time; cancellation strictly before check-in with mandatory reason). |
+| 5 | **Care Team Collaboration** | Done | Primary scheduling provider + M:N supporting consultants; providers view appointments where they are primary or supporting. |
+| 6 | **Appointment Search & Filtering** | Done | Server-side patient name search, multi-filter by provider/status/date range, sorting, and pagination. |
+| 7 | **Bulk Recurring Slots & CSV Export** | Done | Batch slot generation with collision avoidance (reporting created/skipped counts) and RFC 4180 Daily Schedule CSV exporter. |
+| 8 | **Dashboard Analytics** | Done | Real-time KPI cards, provider workload bar chart, appointment status donut chart, and 8-week moving no-show rate area chart. |
+| 9 | **Immutable Audit Timeline** | Done | Append-only transaction ledger tracking creations, status changes, care team assignments, cancellations with reasons, and visit notes with historical diffs. |
+| 10 | **Dynamic Unconfirmed Alerts** | Done | 24-hour warning alert queue, dismissible by Front Desk, with automatic reappearance at < 1 hour if still in `Requested` status. |
 
-## 🌐 Production Deployment Guide
+## How much time did you actually spend?
 
-### A. Database Deployment (Supabase PostgreSQL)
-1. Create a new PostgreSQL project on [Supabase](https://supabase.com).
-2. Copy the Connection String from Project Settings -> Database (URI format).
-3. In `backend/prisma/schema.prisma`, update provider to `postgresql` (or use `backend/prisma/schema.postgresql.prisma`).
-4. Set `DATABASE_URL` in your environment.
-5. Run `npx prisma db push && npx tsx prisma/seed.ts`.
+- **Total time spent**: ~14 hours
+  - **Architecture & Database Modeling**: ~2.5 hours (Prisma schema design, composite indexes, M:N care teams, state machine matrix).
+  - **Backend Core Services & State Machine**: ~4 hours (RBAC, bulk recurring slot generator, collision avoidance, CSV streaming, alert engine, and 28-point automated test suite).
+  - **Frontend UI & Visualization**: ~4.5 hours (React dashboard, Recharts analytics, Appointments console, slot generator modal, author-locked note editor, and visual timeline).
+  - **Deployment & Cloud Infrastructure**: ~3 hours (Supabase PostgreSQL setup, Render Web Service configuration, Vercel SPA routing, and CI/CD audit).
 
-### B. Backend Deployment (Render)
-1. Connect your GitHub repository to [Render](https://render.com).
-2. Create a new **Web Service** pointing to the `backend/` directory.
-3. Configure settings:
-   - **Environment**: Node
-   - **Build Command**: `npm install && npx prisma generate && npm run build`
-   - **Start Command**: `npm start`
-4. Set Environment Variables:
-   - `DATABASE_URL`: Your Supabase connection URI
-   - `JWT_SECRET`: Secure 64-character string
-   - `NODE_ENV`: `production`
-   - `CORS_ORIGIN`: Your Vercel frontend URL
+## What would you do next, with another 12 hours?
 
-### C. Frontend Deployment (Vercel)
-1. Import the repository in [Vercel](https://vercel.com).
-2. Set Root Directory to `frontend`.
-3. Framework Preset: `Vite`.
-4. Environment Variable:
-   - `VITE_API_URL`: `https://your-render-backend.onrender.com/api`
-5. Click **Deploy**.
+1. **Real-time WebSockets / SSE**: Push instant notifications for urgent 1-hour alerts, status changes, and newly assigned care team consultants without polling.
+2. **Automated Patient Communication**: Integrate Twilio SMS and SendGrid email webhooks for automated 24-hour confirmation links and reminder notices.
+3. **Multi-Location / Room Management**: Extend the data model to support multiple clinic physical facilities, exam rooms, and equipment scheduling.
+4. **HL7 / FHIR Integration**: Add FHIR-compliant (`/Appointment`, `/Patient`, `/Encounter`) REST export endpoints for interoperability with hospital EHR systems.
+5. **Advanced Patient Self-Booking Portal**: A lightweight public-facing portal for patients to view open provider availability slots and submit appointment requests.
 
----
+## What are you least happy with in this codebase, and why?
 
-## 📡 REST API Catalogue
-
-### Authentication (`/api/auth`)
-- `POST /api/auth/register`: Register new user account.
-- `POST /api/auth/login`: Authenticate and receive JWT.
-- `GET /api/auth/me`: Get current authenticated profile.
-- `GET /api/auth/providers`: List all registered providers.
-
-### Appointments (`/api/appointments`)
-- `GET /api/appointments`: Server-side search, multi-parameter filter, sort, and paginate appointments.
-- `GET /api/appointments/:id`: Retrieve single appointment with slot, care team, notes, and audit timeline.
-- `POST /api/appointments`: Book an available slot into an appointment (`Requested` status).
-- `PATCH /api/appointments/:id/status`: Update status via Finite State Machine.
-- `POST /api/appointments/:id/cancel`: Cancel appointment (requires reason; forbidden if CheckedIn).
-- `POST /api/appointments/:id/reassign`: Reassign appointment to another provider (Front Desk only).
-- `POST /api/appointments/:id/supporting-providers`: Add consultant to care team.
-- `DELETE /api/appointments/:id/supporting-providers/:providerId`: Remove consultant from care team.
-
-### Availability Slots (`/api/slots`)
-- `GET /api/slots`: List availability slots with provider, date, booked, and archived filters.
-- `POST /api/slots`: Create single availability slot.
-- `PATCH /api/slots/:id`: Edit unbooked slot.
-- `PATCH /api/slots/:id/archive`: Soft-archive slot.
-- `PATCH /api/slots/:id/restore`: Restore archived slot.
-
-### Schedules & CSV Export (`/api/schedule`)
-- `POST /api/schedule/bulk-generate`: Generate recurring slots across weekly schedules with collision skipping.
-- `GET /api/schedule/export-csv`: Stream RFC 4180 Daily Schedule CSV.
-
-### Clinical Visit Notes (`/api/notes`)
-- `GET /api/notes/appointment/:appointmentId`: List chronological notes.
-- `POST /api/notes/appointment/:appointmentId`: Author new note (Providers on care team).
-- `PATCH /api/notes/:noteId`: Update note (**Strictly locked to author provider**).
-
-### Immutable Audit Timeline (`/api/timeline`)
-- `GET /api/timeline/:appointmentId`: Retrieve append-only audit trail.
-
-### Alerts Engine (`/api/alerts`)
-- `GET /api/alerts`: List active 24h warning and 1h reappearing unconfirmed alerts (Front Desk).
-- `POST /api/alerts/dismiss`: Dismiss alert record.
-
-### Analytics Dashboard (`/api/dashboard`)
-- `GET /api/dashboard/metrics`: Aggregate real-time statistics, provider workloads, status distribution, and 8-week no-show rates.
+- **Dual-Schema Management (SQLite Local vs PostgreSQL Cloud)**: To achieve instant zero-config local development while maintaining native PostgreSQL Enums in production, we maintained template schemas swapped via a build script. In a production team environment, adopting a local Dockerized PostgreSQL container or PostgreSQL migration baseline would unify the database dialect into a single source of truth.
+- **Alert Evaluation Mechanism**: Alerts are currently evaluated dynamically on-demand during dashboard/alert requests using indexed date comparisons. For a clinic with hundreds of thousands of active appointments, this would be better served by a background job scheduler (e.g. BullMQ / Redis or PostgreSQL pg_cron) pre-computing urgent alert states into an active notification cache.

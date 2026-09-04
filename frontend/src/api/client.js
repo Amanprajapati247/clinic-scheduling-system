@@ -1,7 +1,17 @@
 import axios from 'axios';
 
+const getBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (!envUrl || envUrl.trim() === '') {
+    return '/api';
+  }
+  let cleaned = envUrl.trim().replace(/\/+$/, '');
+  // If the host is provided without /api, keep it or let backend handle dual mount
+  return cleaned;
+};
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ,
+  baseURL: getBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },

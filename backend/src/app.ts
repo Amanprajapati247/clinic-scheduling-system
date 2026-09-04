@@ -22,8 +22,9 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
 
-// API Routes
+// API Routes mounted on both /api and root / for seamless cross-deployment compatibility
 app.use('/api', apiRouter);
+app.use('/', apiRouter);
 
 // Error Handling
 app.use(notFoundHandler);
