@@ -1,11 +1,10 @@
 # Submission
 
-Fill this in and commit it. This is the first file we open.
 
 ## Links
 
 - **GitHub repository:** https://github.com/Amanprajapati247/clinic-scheduling-system
-- **Live application:** https://clinic-scheduling-frontend.vercel.app
+- **Live application:** https://clinic-scheduling-system-t9te.vercel.app/login
 
 ## Notes for the reviewer
 
@@ -48,7 +47,7 @@ Mark each honestly. Partial is fine — say what is partial.
 | 9 | Immutable Audit Timeline | Done | Append-only transaction ledger logging creations, status transitions, care team changes, cancellations, and note additions with historical diffs. |
 | 10 | Dynamic Unconfirmed Alerts | Done | 24-hour warning alerts for requested appointments; Front Desk can dismiss them, but if still unconfirmed within 1 hour, the critical alert automatically reappears. |
 
-## How much time did you actually spend?
+## How much time did i actually spend?
 
 I spent about **2 full days (around 16 hours total)** building and polishing the system:
 
@@ -64,14 +63,14 @@ I spent about **2 full days (around 16 hours total)** building and polishing the
   - Set up deployment pipelines on Supabase, Render, and Vercel.
   - Seeded realistic clinic data and resolved deployment environment edge cases (cross-origin headers and route mounting).
 
-## What would you do next, with another 12 hours?
+## What would i do next, with another 12 hours?
 
 1. **WebSocket / Server-Sent Events (SSE)**: Right now alerts and timeline updates refresh on navigation or polling. I'd add real-time SSE push so Front Desk instantly sees new appointment requests or urgent 1-hour alerts popping up without refreshing.
 2. **Automated Patient Notifications**: Wire up Twilio / SendGrid webhooks to send automated SMS or email reminders to patients 24 hours prior with a 1-click confirmation link.
 3. **Time Zone & Multi-Location Support**: Right now the clinic operates in a single local timezone. I'd extend the data model to support multiple clinic branches, exam rooms, and explicit UTC offset handling.
 4. **Optimistic UI Updates & Query Caching**: Add React Query / TanStack Query on the frontend for smoother background caching and instantaneous optimistic state transitions.
 
-## What are you least happy with in this codebase, and why?
+## What are i least happy with in this codebase, and why?
 
 - **Frontend Component Granularity**: A few pages like `AppointmentDetails.jsx` and `Appointments.jsx` handle both data fetching and multiple modal states (cancellation, reassignment, care team addition) within the page component. Given more time, I would break them down into smaller custom hooks (e.g. `useAppointmentActions`, `useCareTeam`) to improve maintainability and testability.
 - **On-Demand Alert Evaluation**: The 24h and 1h alert logic evaluates dynamically during query execution. While this works reliably for moderate clinic loads with indexed queries, in a high-throughput enterprise deployment with hundreds of thousands of records, I'd prefer a background Redis/BullMQ worker pre-computing and caching active alert states.

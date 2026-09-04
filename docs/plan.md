@@ -1,6 +1,5 @@
 # Plan
 
-Answer each of these, in your own words.
 
 ---
 
@@ -25,19 +24,19 @@ I split the work across 4 focused sessions over 2 days:
 
 ---
 
-### What did you estimate versus what it actually took?
+### What did i estimate versus what it actually took?
 
 | Task | Estimated | Actual | Notes |
 | :--- | :--- | :--- | :--- |
 | **Schema & Auth** | 2 hours | 2.5 hours | Extra time spent configuring dual SQLite/PostgreSQL schema templates. |
 | **State Machine & Services** | 3 hours | 4 hours | Edge case handling for `NoShow` time comparisons and 1h alert reappearance logic took longer than expected. |
-| **Frontend UI & Charts** | 4 hours | 4.5 hours | Building custom Recharts tooltips and responsive modals took a bit of extra polish. |
+| **Frontend UI & Charts** | 6 hours | 6.5 hours | Building custom Recharts tooltips and responsive modals took a bit of extra polish. |
 | **Deployment & Seeding** | 2 hours | 3 hours | Debugging Render build scripts and base URL pathing added an hour. |
-| **Total** | **~11 hours** | **~14 hours** | Spread across 2 days. |
+| **Total** | **~14 hours** | **~16 hours** | Spread across 2 days. |
 
 ---
 
-### What did you cut when you ran short?
+### What did i cut when you ran short?
 
 1. **WebSocket Real-Time Server**:
    - Dropped live socket connections in favor of fast on-demand polling to keep backend hosting simple and stateless on Render free tier.

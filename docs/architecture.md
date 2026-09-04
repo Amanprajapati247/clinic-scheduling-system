@@ -1,7 +1,4 @@
 # Architecture
-
-Answer each of these, in your own words, once the system has taken real shape.
-
 ---
 
 ### What are the moving pieces, and how do they talk to each other?
@@ -44,7 +41,7 @@ Answer each of these, in your own words, once the system has taken real shape.
 
 ---
 
-### What did you decide not to build, and why?
+### What did i decide not to build, and why?
 
 1. **WebSockets (Live Sockets)**:
    - Free cloud tiers (like Render) spin down when idle, which disconnects live socket servers. Simple HTTP requests and polling kept the backend 100% stateless and reliable.

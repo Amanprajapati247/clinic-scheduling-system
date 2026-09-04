@@ -1,7 +1,5 @@
 # Schema
 
-Answer each of these, in your own words.
-
 ---
 
 ### Table by table: what columns and types does each one have?
@@ -65,7 +63,7 @@ Answer each of these, in your own words.
 
 ---
 
-### What did you deliberately denormalise?
+### What did i deliberately denormalise?
 
 1. **`Appointment.schedulingProviderId`**: 
    - Even though the doctor ID can be found via `Appointment -> Slot -> Provider`, I stored `schedulingProviderId` directly on the `Appointment` table. This allows fast direct filtering and indexing on provider appointments without an expensive SQL JOIN on slots.
