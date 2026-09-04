@@ -8,32 +8,25 @@ If you did not use AI at all, say so here, and describe your process instead.
 
 ---
 
-## 1. System Architecture & Relational Schema Design
+## 1. Database & Schema Design
 
 ### Prompt
-> "Act as a Senior System Architect. Design a production-grade PostgreSQL Prisma ORM schema for a Clinic Appointment Scheduling System. It must support:
-> 1. Role-Based Access Control (`FRONT_DESK` and `PROVIDER`).
-> 2. Provider availability slots with unbooked editing, booked locking, and soft archiving.
-> 3. Clinical visit notes belonging to an appointment, editable ONLY by the original author provider.
-> 4. Multi-provider Care Teams (primary scheduling provider plus M:N supporting consultants).
-> 5. Append-only immutable audit timeline tracking status transitions and clinical actions.
-> 6. Dual-tier alert dismissals (24h warning vs 1h critical)."
+> "Design a PostgreSQL Prisma schema for a Clinic Scheduling system with roles (Front Desk, Provider), provider slots, appointments, M:N care teams, author-locked visit notes, immutable audit timelines, and alert dismissals."
 
 ### What you got
-- A structured Prisma schema containing `User`, `Provider`, `AppointmentSlot`, `Appointment`, `VisitNote`, `SupportingProvider`, and `AppointmentTimeline` models.
-- Basic foreign key relationships and index annotations.
+- Prisma models for users, providers, slots, appointments, notes, and timelines.
 
 ### What you corrected
-- **Missing unique compound constraints**: `SupportingProvider` lacked a unique constraint on `[appointmentId, providerId]`, which would have allowed duplicate assignments of the same consultant to an appointment. I added `@@unique([appointmentId, providerId])`.
-- **Query performance indexes**: Added composite indexes `@@index([providerId, date])` on slots and `@@index([appointmentId, timestamp])` on timeline logs to ensure fast queries during calendar filtering.
-- **PostgreSQL vs SQLite dual compatibility**: Prisma does not allow native enums in SQLite, so I created two synchronized schema templates (`schema.sqlite.prisma` for zero-config local runs and `schema.postgresql.prisma` with native Enums and `@db.Text` for Supabase/Render).
+- Added composite unique constraint `@@unique([appointmentId, providerId])` on `SupportingProvider` to prevent duplicate doctor assignments.
+- Added composite indexes `@@index([providerId, date])` for fast calendar lookups.
+- Created dual schema templates (`schema.sqlite.prisma` and `schema.postgresql.prisma`) so local SQLite and production PostgreSQL enums both work cleanly.
 
 ---
 
-## 2. Finite State Machine & Status Lifecycle Validator (Produced Something Wrong)
+## 2. Finite State Machine Validator (Produced Something Wrong)
 
 ### Prompt
-> "Write a TypeScript finite state machine validator function `validateStatusTransition` for appointment statuses: `Requested` -> `Confirmed` -> `CheckedIn` -> `Completed`. Disallow any transition from terminal states (`Completed`, `NoShow`, `Cancelled`). Disallow cancellation after `CheckedIn`. Require a cancellation reason. Ensure `NoShow` is only valid after the scheduled appointment time."
+> "Write a TypeScript function to validate status transitions: `Requested` -> `Confirmed` -> `CheckedIn` -> `Completed`. Block transitions from terminal states. Block cancellation after `CheckedIn`. Require a reason. Disallow `NoShow` before the scheduled appointment time."
 
 ### What you got
 ```typescript
@@ -47,67 +40,45 @@ if (targetStatus === 'NoShow') {
 ```
 
 ### What you corrected
-- ⚠️ **The Error**: The AI code only checked if the appointment *date* was in the future (`slotDate > today`). This meant an appointment scheduled for 4:00 PM today could be marked as `NoShow` at 9:00 AM in the morning before the patient even had a chance to arrive!
-- 🛠️ **The Fix**: I wrote a dedicated datetime parser `parseSlotDateTime(dateStr, timeStr)` that constructs a full `Date` object combining the slot date (`YYYY-MM-DD`) and start time (`HH:mm`). Then I implemented `isAppointmentTimePassed()`:
-```typescript
-export function isAppointmentTimePassed(dateStr: string, startTimeStr: string, now = new Date()): boolean {
-  const aptStart = parseSlotDateTime(dateStr, startTimeStr);
-  return now.getTime() >= aptStart.getTime();
-}
-```
-I also wrote automated test assertions in `backend/test-suite.ts` to guarantee that marking `NoShow` at 9:00 AM on a 4:00 PM appointment is rejected with an HTTP 400 error.
+- **The Bug**: The AI only checked the calendar *date* (`slotDate > today`), allowing a 4:00 PM appointment to be marked `NoShow` at 9:00 AM on the same day.
+- **The Fix**: Wrote `parseSlotDateTime(dateStr, timeStr)` to combine date and time (`YYYY-MM-DD` + `HH:mm`) into an exact timestamp, and checked `now.getTime() >= aptStart.getTime()`. Added unit tests in `test-suite.ts` to ensure premature same-day `NoShow` transitions are rejected.
 
 ---
 
-## 3. Bulk Recurring Slot Generator & Overlap Collision Detection
+## 3. Bulk Recurring Slot Generator
 
 ### Prompt
-> "Implement a high-performance recurring availability generator in TypeScript:
-> - Parameters: `providerId`, `startDate`, `endDate`, `weeklySchedule` (array of rules with `dayOfWeek`, `startTime`, `endTime`, `duration`).
-> - Iterate through every date between startDate and endDate.
-> - Calculate start and end time intervals for each matching day.
-> - Avoid duplicate or overlapping slots with existing active provider slots.
-> - Return count of created slots vs skipped collisions."
+> "Implement a recurring availability generator: given a provider, date range, and weekly rules (day of week, start time, end time, duration), generate slots while skipping collisions with existing provider slots."
 
 ### What you got
-- A working date iteration loop using JavaScript `Date` and `prisma.appointmentSlot.createMany`.
-- Collision check compared only exact start time strings (`slot.startTime === existing.startTime`).
+- A loop generating date intervals and creating slots in batch, checking collisions with `slot.startTime === existing.startTime`.
 
 ### What you corrected
-- **Interval overlap logic**: Comparing only exact start time misses overlapping slots with different durations (e.g., a 60-min slot starting at 09:00 collides with a 30-min slot starting at 09:30). I replaced the equality check with true time interval overlap:
-  `startA < endB && endA > startB`.
-- **Batch transaction safety**: Wrapped creation in `createMany` with `skipDuplicates: true` and returned structured metrics `{ createdCount, skippedCount, totalEvaluated }` so the frontend UI can display an exact breakdown toast to Front Desk staff.
+- Exact start-time matching missed overlapping slots with different durations (e.g. 60-min slot at 09:00 overlapping a 30-min slot at 09:30). Replaced with true interval overlap logic: `startA < endB && endA > startB`.
+- Returned structured counts `{ createdCount, skippedCount }` for the UI toast.
 
 ---
 
-## 4. Dynamic 24h Warning & 1h Reappearing Alert Engine
+## 4. 24h Warning & 1h Reappearing Alerts
 
 ### Prompt
-> "Build an alert calculation service for unconfirmed appointments in `Requested` status:
-> - If an appointment is in `Requested` status and starts within the next 24 hours, generate a `UNCONFIRMED_24H` warning alert.
-> - Allow Front Desk to dismiss the alert.
-> - Critical requirement: If the appointment is STILL in `Requested` status within 1 hour of start time, generate a `UNCONFIRMED_1H` critical alert that MUST reappear even if the Front Desk previously dismissed the 24h warning alert."
+> "Build an alert engine for unconfirmed Requested appointments: show warning if within 24h (dismissible by Front Desk), but if still Requested within 1h, show a critical alert that reappears even if 24h was dismissed."
 
 ### What you got
-- A service that filtered appointments by date and checked a boolean `isDismissed` column on the `Appointment` table.
+- Filtered appointments by date with a single boolean `isDismissed` column on the `Appointment` table.
 
 ### What you corrected
-- **Single boolean flag failed reappearance rule**: A single boolean `isDismissed` on the appointment prevented the 1-hour alert from showing up if the 24-hour alert had been dismissed earlier.
-- **Dedicated dismissal entity**: Created the `AlertDismissal` model storing `[appointmentId, alertType, userId, dismissedAt]`. In `AlertService.getActiveAlerts()`, when `diffMinutes <= 60`, the query checks ONLY for dismissals with `alertType === 'UNCONFIRMED_1H'`. This guarantees that dismissing a 24-hour warning never suppresses the 1-hour critical alert.
+- A single boolean flag permanently hid the alert once dismissed. Created the `AlertDismissal` model storing `alertType` (`UNCONFIRMED_24H` vs `UNCONFIRMED_1H`). For appointments under 1h away, the query only checks for `UNCONFIRMED_1H` dismissals, ensuring the alert reappears.
 
 ---
 
-## 5. Deployment & Cross-Origin Route Compatibility
+## 5. Deployment Route Compatibility
 
 ### Prompt
-> "Set up the Express backend and React Vite frontend configuration for production deployment to Render and Vercel with CORS and environment variable handling."
+> "Configure Express backend and React Vite frontend for production deployment on Render and Vercel."
 
 ### What you got
-- Standard Express setup mounting routes at `app.use('/api', apiRouter)`.
-- Frontend Axios client using `baseURL: import.meta.env.VITE_API_URL`.
+- Express mounted routes at `app.use('/api', apiRouter)`, and frontend used `baseURL: import.meta.env.VITE_API_URL`.
 
 ### What you corrected
-- **Route not found on custom base URLs**: When deployed, if `VITE_API_URL` was set to `https://clinic-backend.onrender.com` without `/api`, the frontend called `POST /auth/login` and received `404 Route not found: POST /auth/login`.
-- **Dual-mount & URL normalization**:
-  1. Updated `backend/src/app.ts` to mount routes on **both `/api` and `/`** (`app.use('/api', apiRouter); app.use('/', apiRouter);`).
-  2. Updated `frontend/src/api/client.js` with helper `getBaseUrl()` that strips trailing slashes and handles any base URL format gracefully.
+- If `VITE_API_URL` was provided without `/api` on Vercel, requests to `/auth/login` returned 404 Route Not Found. Mounted routes on both `/api` and `/` on Express, and added automatic base URL normalization on the frontend Axios client.
